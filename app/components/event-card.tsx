@@ -246,21 +246,37 @@ export function EventSection({
   lowPriorityEvents,
   lowPriorityNote,
   mutedEventIds,
+  alwaysVisibleEventIds,
 }: {
   events: EventItem[];
   note?: string;
   lowPriorityEvents?: EventItem[];
   lowPriorityNote?: string;
   mutedEventIds?: string[];
+  alwaysVisibleEventIds?: string[];
 }) {
   const { profile } = useFeedbackProfile();
   const combinedEvents = [...events, ...(lowPriorityEvents ?? [])];
   const adjustedEvents = applyFeedbackToEvents(combinedEvents, profile);
+  const alwaysVisibleEventIdSet = new Set(alwaysVisibleEventIds ?? []);
   const visibleEvents = adjustedEvents.filter(
-    (event) => !event.hiddenReason?.startsWith("Skipped malformed date-only listing."),
+    (event) => {
+      const isAlwaysVisible = alwaysVisibleEventIdSet.has(event.id);
+      const canBypassTasteFilter = isAlwaysVisible && (!event.hiddenReason || event.hiddenReason.startsWith("Lower priority"));
+
+      return (
+        !event.hiddenReason?.startsWith("Skipped malformed date-only listing.") &&
+        (canBypassTasteFilter ||
+          (!isAlwaysVisible && (!event.hiddenReason || event.hiddenReason.startsWith("Lower priority"))))
+      );
+    },
   );
-  const recommendedEvents = visibleEvents.filter((event) => !event.hiddenReason);
-  const renderedLowPriorityEvents = visibleEvents.filter((event) => event.hiddenReason);
+  const recommendedEvents = visibleEvents.filter(
+    (event) => alwaysVisibleEventIdSet.has(event.id) || !event.hiddenReason,
+  );
+  const renderedLowPriorityEvents = visibleEvents.filter(
+    (event) => !alwaysVisibleEventIdSet.has(event.id) && Boolean(event.hiddenReason),
+  );
   const mutedEventIdSet = new Set(mutedEventIds ?? []);
 
   return (

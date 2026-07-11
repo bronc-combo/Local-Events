@@ -193,6 +193,7 @@ export function DashboardPage({
   const todayCultureEvents = eventProvider.cultureEvents.filter(
     (event: EventItem) => isHoustonToday(event.dateTime),
   );
+  const todayCultureEventIds = todayCultureEvents.map((event) => event.id);
   const todayOtherEvents = [
     ...eventProvider.otherEvents.filter((event: EventItem) => isHoustonToday(event.dateTime)),
   ].filter((event: EventItem, index: number, events: EventItem[]) => events.findIndex((other) => other.id === event.id) === index);
@@ -289,7 +290,7 @@ export function DashboardPage({
             summary="Today's Houston picks across music, sports, arts, and local events."
             title="Today's Events"
           >
-            <EventSection events={todayEvents} />
+            <EventSection alwaysVisibleEventIds={todayCultureEventIds} events={todayEvents} />
           </CollapsibleSection>
 
           <CollapsibleSection
