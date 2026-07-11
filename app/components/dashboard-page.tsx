@@ -49,18 +49,37 @@ function getTodaySectionOrder(event: EventItem): number {
   }
 }
 
-function sortEventsForTodayBucket(events: EventItem[]): EventItem[] {
-  return [...events].sort((left, right) => {
-    if (right.tasteScore !== left.tasteScore) {
-      return right.tasteScore - left.tasteScore;
+function sortEventsForTodayBucket(events: EventItem[], category: EventItem["sectionCategory"]): EventItem[] {
+  const copy = [...events];
+
+  if (category === "concert") {
+    return copy.sort((left, right) => {
+      if (right.tasteScore !== left.tasteScore) {
+        return right.tasteScore - left.tasteScore;
+      }
+
+      return left.dateTime.localeCompare(right.dateTime);
+    });
+  }
+
+  return copy.sort((left, right) => {
+    if (left.dateTime !== right.dateTime) {
+      return left.dateTime.localeCompare(right.dateTime);
     }
 
-    return left.dateTime.localeCompare(right.dateTime);
+    return left.title.localeCompare(right.title);
   });
 }
 
 function buildBalancedTodayEvents(events: EventItem[]): EventItem[] {
   const buckets = new Map<number, EventItem[]>();
+  const sectionCategoryByOrder: Record<number, EventItem["sectionCategory"]> = {
+    0: "concert",
+    1: "arts_culture",
+    2: "sports",
+    3: "other",
+    4: "food_drink",
+  };
 
   for (const event of events) {
     const key = getTodaySectionOrder(event);
@@ -70,23 +89,18 @@ function buildBalancedTodayEvents(events: EventItem[]): EventItem[] {
   }
 
   for (const [key, bucket] of buckets) {
-    buckets.set(key, sortEventsForTodayBucket(bucket));
+    const sectionCategory = sectionCategoryByOrder[key] ?? "other";
+    buckets.set(key, sortEventsForTodayBucket(bucket, sectionCategory));
   }
 
   const bucketOrder = [...buckets.keys()].sort((left, right) => left - right);
   const balanced: EventItem[] = [];
-  let remaining = true;
 
-  while (remaining) {
-    remaining = false;
+  for (const bucketKey of bucketOrder) {
+    const bucket = buckets.get(bucketKey);
 
-    for (const bucketKey of bucketOrder) {
-      const bucket = buckets.get(bucketKey);
-
-      if (bucket && bucket.length > 0) {
-        balanced.push(bucket.shift() as EventItem);
-        remaining = true;
-      }
+    if (bucket && bucket.length > 0) {
+      balanced.push(...bucket);
     }
   }
 
