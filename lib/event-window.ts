@@ -1,0 +1,1 @@
+export const EVENT_DISPLAY_WINDOW_DAYS = 30;

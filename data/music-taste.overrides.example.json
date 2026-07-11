@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "artists": [
+    {
+      "match": "Chat Pile",
+      "genreTags": ["noise rock", "post-hardcore", "metal"],
+      "scoreBoost": 30,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Drive Like Jehu",
+      "genreTags": ["post-hardcore", "noise rock", "math rock"],
+      "scoreBoost": 28,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Gilla Band",
+      "genreTags": ["noise rock", "post-punk", "experimental rock"],
+      "scoreBoost": 28,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "HEALTH",
+      "genreTags": ["industrial", "experimental electronic", "noise rock"],
+      "scoreBoost": 26,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Thou",
+      "genreTags": ["doom", "sludge", "metal"],
+      "scoreBoost": 26,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Godflesh",
+      "genreTags": ["industrial", "metal", "experimental"],
+      "scoreBoost": 28,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Moor Mother",
+      "genreTags": ["experimental hip-hop", "noise", "avant-garde"],
+      "scoreBoost": 22,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Swans",
+      "genreTags": ["post-rock", "experimental rock", "drone"],
+      "scoreBoost": 26,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Unwound",
+      "genreTags": ["post-hardcore", "math rock", "noise rock"],
+      "scoreBoost": 26,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Kowloon Walled City",
+      "genreTags": ["post-metal", "sludge", "doom"],
+      "scoreBoost": 24,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "The Body",
+      "genreTags": ["doom", "noise", "industrial"],
+      "scoreBoost": 24,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    },
+    {
+      "match": "Oneohtrix Point Never",
+      "genreTags": ["experimental electronic", "ambient", "idm"],
+      "scoreBoost": 22,
+      "reasons": ["artist override: strong taste match"],
+      "greatLiveAct": true
+    }
+  ],
+  "titlePatterns": [
+    {
+      "match": "album release show",
+      "genreTags": ["punk", "indie", "noise rock"],
+      "scoreBoost": 8,
+      "reasons": ["local override: genre tags added"]
+    },
+    {
+      "match": "record release",
+      "genreTags": ["punk", "post-hardcore"],
+      "scoreBoost": 8,
+      "reasons": ["local override: genre tags added"]
+    }
+  ],
+  "negativeMatches": [
+    {
+      "match": "generic tribute",
+      "scorePenalty": 15,
+      "reasons": ["local override: lower-interest pattern"]
+    },
+    {
+      "match": "cover band",
+      "scorePenalty": 15,
+      "reasons": ["local override: lower-interest pattern"]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+[
+  {
+    "title": "Juniper Yard",
+    "type_": "Cocktail bar",
+    "location": "Heights",
+    "address": "123 Example St, Houston, TX",
+    "googleMapsLink": "https://maps.google.com/?q=123+Example+St+Houston+TX",
+    "homepage": "https://example.com/juniper-yard",
+    "instagram": "https://instagram.com/juniperyardhouston",
+    "cuisineType": "Small plates",
+    "estimatedCost": "$$",
+    "wellReviewedItems": [
+      "house martini",
+      "crispy potatoes"
+    ],
+    "happyHour": "$9 cocktails and snack specials",
+    "specials": [
+      {
+        "title": "Weekday happy hour",
+        "description": "$9 cocktails and snack specials.",
+        "daysOfWeek": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+        "startTime": "16:00",
+        "endTime": "18:00",
+        "type": "happy_hour",
+        "source": "Capacities"
+      }
+    ],
+    "hoursOfOperation": "Mon-Fri 4 PM-10 PM",
+    "myRating": 4.6,
+    "averagePublicRating": 4.4
+  },
+  {
+    "title": "Signal Coffee",
+    "type_": "Coffee shop",
+    "location": "Near Northside",
+    "address": "456 Sample Ave, Houston, TX",
+    "googleMapsLink": "https://maps.google.com/?q=456+Sample+Ave+Houston+TX",
+    "homepage": "https://example.com/signal-coffee",
+    "estimatedCost": "$",
+    "hoursOfOperation": "Daily 7 AM-4 PM",
+    "myRating": 4.2
+  }
+]

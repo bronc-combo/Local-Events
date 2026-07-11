@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local private data exports
+/data/food-drink.capacities.json
+/data/food-drink.capacities.import.json
+/data/music-taste.overrides.local.json
+/public/data/dashboard-snapshot.json
+
+# local source cache
+/.daily-overview-cache/

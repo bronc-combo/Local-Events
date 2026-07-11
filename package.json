@@ -4,9 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "bash scripts/dev-clean.sh",
+    "dev:snapshot": "DASHBOARD_DATA_MODE=snapshot npm run dev:clean",
     "build": "next build",
+    "build:snapshot": "DASHBOARD_DATA_MODE=snapshot npm run build",
+    "build:static-prep": "npm run generate:snapshot && DASHBOARD_DATA_MODE=snapshot npm run build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import:food-drink": "node scripts/import-capacities-food-drink.mjs data/food-drink.capacities.import.json",
+    "generate:snapshot": "node --experimental-strip-types --loader ./scripts/ts-alias-loader.mjs scripts/generate-dashboard-snapshot.ts"
   },
   "dependencies": {
     "next": "16.2.9",

@@ -1,0 +1,41 @@
+[
+  {
+    "name": "Better Luck Tomorrow",
+    "type": "Cocktail bar",
+    "address": "544 Yale St, Houston, TX 77007",
+    "neighborhood": "The Heights",
+    "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Better%20Luck%20Tomorrow%20544%20Yale%20St%20Houston%20TX%2077007",
+    "homepage": "https://www.betterlucktomorrowhou.com",
+    "instagram": "https://www.instagram.com/bltomorrow/",
+    "hours": "Mon-Fri 4 PM-12 AM",
+    "happyHour": "Weekdays 4-6 PM; half-off BLT drinks.",
+    "specials": [
+      {
+        "title": "Weekday happy hour",
+        "description": "Half-off BLT drinks.",
+        "daysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "startTime": "4:00 PM",
+        "endTime": "6:00 PM",
+        "type": "happy_hour",
+        "source": "Capacities"
+      }
+    ],
+    "notes": "Keep the structured happy hour and remove duplicate notes only if the import has a better version.",
+    "source": "Capacities export",
+    "lastUpdated": "2026-06-28T15:30:00-05:00",
+    "myRating": 4.8,
+    "averagePublicRating": 4.4
+  },
+  {
+    "name": "Sunset Tacos",
+    "type": "Restaurant",
+    "address": "900 Sample St, Houston, TX 77009",
+    "neighborhood": "Near Northside",
+    "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sunset%20Tacos%20900%20Sample%20St%20Houston%20TX%2077009",
+    "homepage": "https://example.com/sunset-tacos",
+    "happyHour": "Daily 3-6 PM",
+    "notes": "Free-text happy hour that may need manual structuring later.",
+    "source": "Capacities export",
+    "lastUpdated": "2026-06-28T15:30:00-05:00"
+  }
+]
