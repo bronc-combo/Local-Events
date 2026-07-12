@@ -122,6 +122,7 @@ export interface VenueSourceStatus {
   sourceTrustLabel?: string;
   sourceDisclosure?: string;
   thirdPartySourceName?: string;
+  renderDiagnostics?: ProviderRenderDiagnostics;
   debug?:
   | WhiteOakSourceDebug
   | DanElectrosSourceDebug
@@ -138,6 +139,24 @@ export interface VenueSourceStatus {
   | AxelradSourceDebug
   | BlackMagicBandsintownSourceDebug
   | OtherEventsSourceDebug;
+}
+
+export interface ProviderRenderSample {
+  id: string;
+  title: string;
+  sourceKey?: string;
+  sourceLabel?: string;
+  category?: string;
+  sectionCategory?: string;
+  startDate?: string;
+  endDate?: string;
+  venue?: string;
+  eventUrl?: string;
+}
+
+export interface ProviderRenderDiagnostics {
+  parsedInWindowCount: number;
+  sampleEvents: ProviderRenderSample[];
 }
 
 export interface OfficialVenueEventResult {
@@ -316,7 +335,10 @@ function buildStatusRecord(
   status: VenueSourceStatus["status"],
   message: string,
   debug?: VenueSourceStatus["debug"],
-  extra?: Pick<VenueSourceStatus, "sourceTier" | "sourceTrustLabel" | "sourceDisclosure" | "thirdPartySourceName">,
+  extra?: Pick<
+    VenueSourceStatus,
+    "sourceTier" | "sourceTrustLabel" | "sourceDisclosure" | "thirdPartySourceName" | "renderDiagnostics"
+  >,
 ): VenueSourceStatus {
   return {
     sourceName,
@@ -419,6 +441,32 @@ function partitionEvents(events: EventItem[]): {
         return eventDate > today && eventDate <= upcomingEnd;
       }),
     ),
+  };
+}
+
+function buildRenderDiagnostics(events: EventItem[]): ProviderRenderDiagnostics {
+  const today = getHoustonTodayDate();
+  const upcomingEnd = addDays(today, EVENT_DISPLAY_WINDOW_DAYS);
+  const inWindowEvents = events.filter((event) => {
+    const eventDate = event.dateTime.slice(0, 10);
+
+    return eventDate >= today && eventDate <= upcomingEnd;
+  });
+
+  return {
+    parsedInWindowCount: inWindowEvents.length,
+    sampleEvents: inWindowEvents.slice(0, 3).map((event) => ({
+      id: event.id,
+      title: event.title,
+      sourceKey: event.sourceKey,
+      sourceLabel: event.sourceLabel,
+      category: event.category,
+      sectionCategory: event.sectionCategory,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      venue: event.venue,
+      eventUrl: event.eventUrl,
+    })),
   };
 }
 
@@ -551,6 +599,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         whiteOakResult.status,
         whiteOakResult.message,
         whiteOakResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(whiteOakResult.events) },
       ),
       buildStatusRecord(
         DAN_ELECTROS_SOURCE_NAME,
@@ -558,6 +607,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         danElectrosResult.status,
         danElectrosResult.message,
         danElectrosResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(danElectrosResult.events) },
       ),
       buildStatusRecord(
         WAREHOUSE_LIVE_MIDTOWN_SOURCE_NAME,
@@ -565,6 +615,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         warehouseLiveMidtownResult.status,
         warehouseLiveMidtownResult.message,
         warehouseLiveMidtownResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(warehouseLiveMidtownResult.events) },
       ),
       buildStatusRecord(
         HEIGHTS_THEATER_SOURCE_NAME,
@@ -572,6 +623,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         heightsTheaterResult.status,
         heightsTheaterResult.message,
         heightsTheaterResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(heightsTheaterResult.events) },
       ),
       buildStatusRecord(
         SEVEN_THIRTEEN_MUSIC_HALL_SOURCE_NAME,
@@ -579,6 +631,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         sevenThirteenMusicHallResult.status,
         sevenThirteenMusicHallResult.message,
         sevenThirteenMusicHallResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(sevenThirteenMusicHallResult.events) },
       ),
       buildStatusRecord(
         NUMBERS_SOURCE_NAME,
@@ -586,6 +639,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         numbersResult.status,
         numbersResult.message,
         numbersResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(numbersResult.events) },
       ),
       buildStatusRecord(
         MUCKY_DUCK_SOURCE_NAME,
@@ -593,6 +647,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         muckyDuckResult.status,
         muckyDuckResult.message,
         muckyDuckResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(muckyDuckResult.events) },
       ),
       buildStatusRecord(
         AXELRAD_SOURCE_NAME,
@@ -600,6 +655,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         axelradResult.status,
         axelradResult.message,
         axelradResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(axelradResult.events) },
       ),
       ...(blackMagicBandsintownEnabled
         ? [
@@ -614,6 +670,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
                 sourceTrustLabel: "Third-party listing",
                 sourceDisclosure: "Third-party listing: Bandsintown, not official venue site",
                 thirdPartySourceName: "Bandsintown",
+                renderDiagnostics: buildRenderDiagnostics(blackMagicBandsintownResult.events),
               },
             ),
           ]
@@ -624,6 +681,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         houseOfBluesStatus,
         houseOfBluesResult.message,
         houseOfBluesResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(houseOfBluesResult.events) },
       ),
       buildStatusRecord(
         CONTINENTAL_CLUB_SOURCE_NAME,
@@ -631,6 +689,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         continentalClubResult.status,
         continentalClubResult.message,
         continentalClubResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(continentalClubResult.events) },
       ),
       buildStatusRecord(
         SCOUT_BAR_SOURCE_NAME,
@@ -638,6 +697,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         scoutBarResult.status,
         scoutBarResult.message,
         scoutBarResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(scoutBarResult.events) },
       ),
       buildStatusRecord(
         THE_END_SOURCE_NAME,
@@ -645,6 +705,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         theEndResult.status,
         theEndResult.message,
         theEndResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(theEndResult.events) },
       ),
       buildStatusRecord(
         THE_SECRET_GROUP_SOURCE_NAME,
@@ -652,6 +713,7 @@ export async function getOfficialVenueEvents(): Promise<OfficialVenueEventResult
         secretGroupResult.status === "failed" ? "failed" : secretGroupConcertEvents.length > 0 ? "success" : "unavailable",
         secretGroupResult.message,
         secretGroupResult.debug,
+        { renderDiagnostics: buildRenderDiagnostics(secretGroupResult.events) },
       ),
     );
 

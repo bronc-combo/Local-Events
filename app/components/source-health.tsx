@@ -10,6 +10,7 @@ import {
 import {
   getEventSourceKey,
   normalizeEventSourceKey,
+  type ProviderRenderDiagnostics,
   type VenueSourceStatus,
 } from "@/lib/event-sources";
 import { HOUSTON_CULTURE_REGISTRY } from "@/lib/culture-registry";
@@ -808,11 +809,11 @@ function buildActiveSourceRows(
       .filter((title, index, titles) => titles.indexOf(title) === index);
     const parsedInWindowCount = getParsedInWindowCount(status);
     const renderedCount = visibleMusicEvents.length + lowPriorityMusicEvents.length + visibleOtherEvents.length + lowPriorityOtherEvents.length;
-      const renderContractWarning = status?.status !== "failed"
+    const renderContractWarning = status?.status !== "failed"
       && typeof parsedInWindowCount === "number"
       && parsedInWindowCount > 0
       && renderedCount === 0
-      ? `${venue.displayName}: Parsed events are not entering rendered arrays; check merge/category/date/source-key normalization.`
+      ? `${venue.displayName}: Parsed in-window events are not rendering; check sectionCategory, sourceKey, merge path, date window, and dedupe.`
       : null;
     const fetchStateLabel = getVenueFetchStateLabel(venue, status);
 
@@ -839,6 +840,7 @@ function buildActiveSourceRows(
       lowPriorityOtherCount: lowPriorityOtherEvents.length,
       lowPriorityOtherTitles: lowPriorityOtherEvents.map((event) => event.title),
       visibleTitles,
+      renderDiagnostics: status?.renderDiagnostics,
       earliestEventDate: getDebugStringByKeys(status, ["earliestEventDate", "earliestParsedEventDate"]),
       latestEventDate: getDebugStringByKeys(status, ["latestEventDate", "latestParsedEventDate"]),
       skippedReasons: getDebugStringArray(status, "skippedReasons"),
@@ -871,12 +873,13 @@ function buildThirdPartyRows(statuses: VenueSourceStatus[]) {
       visibleTitles: getDebugStringArray(status, "visibleTitles"),
       lowPriorityMusicTitles: getDebugStringArray(status, "lowPriorityMusicTitles"),
       lowPriorityOtherTitles: getDebugStringArray(status, "lowPriorityOtherTitles"),
+      renderDiagnostics: status.renderDiagnostics,
       earliestEventDate: getDebugStringByKeys(status, ["earliestEventDate", "earliestParsedEventDate"]),
       latestEventDate: getDebugStringByKeys(status, ["latestEventDate", "latestParsedEventDate"]),
       skippedReasons: getDebugStringArray(status, "skippedReasons"),
       parsedInWindowCount: getParsedInWindowCount(status),
       renderContractWarning: status.status !== "failed" && (getParsedInWindowCount(status) ?? 0) > 0 && getRenderedCount(status) === 0
-        ? "Parsed events are not entering rendered arrays; check merge/category/date/source-key normalization."
+        ? "Parsed in-window events are not rendering; check sectionCategory, sourceKey, merge path, date window, and dedupe."
         : null,
     }));
 }
@@ -888,6 +891,22 @@ function getRenderedCount(status: VenueSourceStatus): number {
     (getDebugNumber(status, "visibleOtherCount") ?? 0) +
     (getDebugNumber(status, "lowPriorityOtherCount") ?? 0)
   );
+}
+
+function formatRenderDiagnosticSample(sample: ProviderRenderDiagnostics["sampleEvents"][number]): string {
+  const fields = [
+    sample.sourceKey ? `sourceKey=${sample.sourceKey}` : null,
+    sample.sourceLabel ? `sourceLabel=${sample.sourceLabel}` : null,
+    sample.category ? `category=${sample.category}` : null,
+    sample.sectionCategory ? `sectionCategory=${sample.sectionCategory}` : null,
+    sample.startDate ? `startDate=${sample.startDate}` : null,
+    sample.endDate ? `endDate=${sample.endDate}` : null,
+    sample.venue ? `venue=${sample.venue}` : null,
+    sample.eventUrl ? `url=${sample.eventUrl}` : null,
+    `id=${sample.id}`,
+  ].filter(Boolean);
+
+  return `${sample.title} (${fields.join(" · ")})`;
 }
 
 export function SourceHealth({
@@ -1147,6 +1166,11 @@ export function SourceHealth({
                 {row.renderContractWarning ? (
                   <span>{row.renderContractWarning}</span>
                 ) : null}
+                {row.renderContractWarning && row.renderDiagnostics?.sampleEvents?.length ? (
+                  <span>
+                    Parsed samples: {row.renderDiagnostics.sampleEvents.slice(0, 3).map(formatRenderDiagnosticSample).join(" · ")}
+                  </span>
+                ) : null}
                 <span>Cache: {row.cacheSummary}</span>
               </div>
 
@@ -1204,6 +1228,11 @@ export function SourceHealth({
                   {row.lowPriorityOtherTitles?.length ? <span>Low-priority other titles: {row.lowPriorityOtherTitles.slice(0, 4).join(" · ")}</span> : null}
                   {row.skippedReasons?.length ? <span>Skipped reasons: {row.skippedReasons.slice(0, 4).join(" · ")}</span> : null}
                   {row.renderContractWarning ? <span>{row.renderContractWarning}</span> : null}
+                  {row.renderContractWarning && row.renderDiagnostics?.sampleEvents?.length ? (
+                    <span>
+                      Parsed samples: {row.renderDiagnostics.sampleEvents.slice(0, 3).map(formatRenderDiagnosticSample).join(" · ")}
+                    </span>
+                  ) : null}
                   <span>Cache: {row.cacheSummary}</span>
                 </div>
 
