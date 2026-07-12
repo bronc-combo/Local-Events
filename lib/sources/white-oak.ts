@@ -11,6 +11,7 @@ const WHITE_OAK_USER_AGENT = "DailyOverviewBot/1.0 (+https://localhost)";
 export interface WhiteOakSourceDebug {
   urlsChecked: string[];
   fetchSucceeded: boolean;
+  responseStatus?: number;
   rawEventCandidates: number;
   parsedValidEvents: number;
   earliestEventDate?: string;
@@ -221,6 +222,7 @@ function mapListingToEvent(listing: WhiteOakParsedListing): EventItem {
     venue: listing.venue,
     city: "Houston",
     category: "Concert",
+    sectionCategory: "concert",
     genreTags,
     sourceLinks: [
       {
@@ -378,6 +380,7 @@ async function fetchHtml(url: string): Promise<{ ok: boolean; status?: number; h
 
     return {
       ok: true,
+      status: response.status,
       html: await response.text(),
     };
   } finally {
@@ -454,6 +457,7 @@ export async function fetchWhiteOakSource(): Promise<WhiteOakSourceResult> {
     const debug: WhiteOakSourceDebug = {
       urlsChecked: checkedUrls,
       fetchSucceeded: true,
+      responseStatus: homepageResponse.status,
       rawEventCandidates: rawCandidates,
       parsedValidEvents: events.length,
       earliestEventDate: dates.earliestEventDate,
@@ -476,6 +480,7 @@ export async function fetchWhiteOakSource(): Promise<WhiteOakSourceResult> {
     const debug: WhiteOakSourceDebug = {
       urlsChecked: [WHITE_OAK_SOURCE_URL],
       fetchSucceeded: false,
+      responseStatus: undefined,
       rawEventCandidates: 0,
       parsedValidEvents: 0,
       todayChecked: false,
