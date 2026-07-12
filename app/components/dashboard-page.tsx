@@ -28,41 +28,47 @@ function getHoustonTodayDate(): string {
   }).format(new Date());
 }
 
-function isHoustonToday(dateTime: string): boolean {
-  return dateTime.slice(0, 10) === getHoustonTodayDate();
-}
+function isEventActiveToday(event: Pick<EventItem, "dateTime" | "startDate" | "endDate">): boolean {
+  const today = getHoustonTodayDate();
+  const eventDate = event.dateTime.slice(0, 10);
+  const startDate = event.startDate ?? eventDate;
+  const endDate = event.endDate ?? eventDate;
 
-function getTodaySectionOrder(event: EventItem): number {
-  switch (event.sectionCategory) {
-    case "concert":
-      return 0;
-    case "sports":
-      return 1;
-    case "arts_culture":
-      return 2;
-    case "other":
-      return 3;
-    case "food_drink":
-      return 4;
-    default:
-      return 5;
-  }
-}
-
-function sortEventsForTodayBucket(events: EventItem[], category: EventItem["sectionCategory"]): EventItem[] {
-  const copy = [...events];
-
-  if (category === "concert") {
-    return copy.sort((left, right) => {
-      if (right.tasteScore !== left.tasteScore) {
-        return right.tasteScore - left.tasteScore;
-      }
-
-      return left.dateTime.localeCompare(right.dateTime);
-    });
+  if (startDate !== endDate) {
+    return startDate <= today && endDate >= today;
   }
 
-  return copy.sort((left, right) => {
+  return eventDate === today;
+}
+
+function isOngoingTodayEvent(event: Pick<EventItem, "dateTime" | "startDate" | "endDate" | "isOngoing">): boolean {
+  const eventDate = event.dateTime.slice(0, 10);
+  const startDate = event.startDate ?? eventDate;
+  const endDate = event.endDate ?? eventDate;
+
+  if (event.isOngoing) {
+    return true;
+  }
+
+  return startDate !== endDate && isEventActiveToday(event);
+}
+
+function uniqueEventsById(events: EventItem[]): EventItem[] {
+  return events.filter((event, index, allEvents) => allEvents.findIndex((other) => other.id === event.id) === index);
+}
+
+function sortMusicEventsForToday(events: EventItem[]): EventItem[] {
+  return [...events].sort((left, right) => {
+    if (right.tasteScore !== left.tasteScore) {
+      return right.tasteScore - left.tasteScore;
+    }
+
+    return left.dateTime.localeCompare(right.dateTime);
+  });
+}
+
+function sortDateThenTitle(events: EventItem[]): EventItem[] {
+  return [...events].sort((left, right) => {
     if (left.dateTime !== right.dateTime) {
       return left.dateTime.localeCompare(right.dateTime);
     }
@@ -71,26 +77,53 @@ function sortEventsForTodayBucket(events: EventItem[], category: EventItem["sect
   });
 }
 
+function sortPreserveOrder(events: EventItem[]): EventItem[] {
+  return [...events];
+}
+
+function getTodayBucketOrder(event: EventItem): number {
+  if (isOngoingTodayEvent(event)) {
+    return 5;
+  }
+
+  switch (event.sectionCategory) {
+    case "concert":
+      return 0;
+    case "food_drink":
+      return 1;
+    case "arts_culture":
+      return 2;
+    case "sports":
+      return 3;
+    case "other":
+      return 4;
+    default:
+      return 6;
+  }
+}
+
 function buildBalancedTodayEvents(events: EventItem[]): EventItem[] {
   const buckets = new Map<number, EventItem[]>();
-  const sectionCategoryByOrder: Record<number, EventItem["sectionCategory"]> = {
-    0: "concert",
-    1: "arts_culture",
-    2: "sports",
-    3: "other",
-    4: "food_drink",
+  const bucketSorters: Record<number, (items: EventItem[]) => EventItem[]> = {
+    0: sortMusicEventsForToday,
+    1: sortDateThenTitle,
+    2: sortDateThenTitle,
+    3: sortDateThenTitle,
+    4: sortDateThenTitle,
+    5: sortDateThenTitle,
+    6: sortPreserveOrder,
   };
 
   for (const event of events) {
-    const key = getTodaySectionOrder(event);
+    const key = getTodayBucketOrder(event);
     const existing = buckets.get(key) ?? [];
     existing.push(event);
     buckets.set(key, existing);
   }
 
   for (const [key, bucket] of buckets) {
-    const sectionCategory = sectionCategoryByOrder[key] ?? "other";
-    buckets.set(key, sortEventsForTodayBucket(bucket, sectionCategory));
+    const sorter = bucketSorters[key] ?? sortPreserveOrder;
+    buckets.set(key, sorter(bucket));
   }
 
   const bucketOrder = [...buckets.keys()].sort((left, right) => left - right);
@@ -185,35 +218,46 @@ export function DashboardPage({
         .slice(musicFallbackPromotedEvents.length)
         .filter((event) => !promotedMusicEventIds.has(event.id));
   const todayMusicEvents = eventProvider.todayEvents.filter(
-    (event) => event.sectionCategory === "concert" && isHoustonToday(event.dateTime),
+    (event) => event.sectionCategory === "concert" && isEventActiveToday(event),
   );
+  const todayFoodDrinkEvents = buildFoodDrinkTodayEvents(foodDrinkProvider.primaryItems);
   const todaySportsEvents = sportsProvider.primarySports
-    .filter((event: SportsEvent) => event.isHomeOrLocal && isHoustonToday(event.dateTime))
+    .filter((event: SportsEvent) => event.isHomeOrLocal && isEventActiveToday(event))
     .map((event: SportsEvent) => sportsEventToEventItem(event));
-  const todayCultureEvents = eventProvider.cultureEvents.filter(
-    (event: EventItem) => isHoustonToday(event.dateTime),
+  const todayCultureEvents = uniqueEventsById(
+    eventProvider.cultureEvents.filter((event: EventItem) => isEventActiveToday(event)),
   );
   const todayCultureEventIds = todayCultureEvents.map((event) => event.id);
-  const todayOtherEvents = [
-    ...eventProvider.otherEvents.filter((event: EventItem) => isHoustonToday(event.dateTime)),
-  ].filter((event: EventItem, index: number, events: EventItem[]) => events.findIndex((other) => other.id === event.id) === index);
-  const todayFoodDrinkEvents = buildFoodDrinkTodayEvents(foodDrinkProvider.primaryItems);
+  const todayOtherEvents = uniqueEventsById(
+    eventProvider.otherEvents.filter((event: EventItem) => isEventActiveToday(event)),
+  );
+  const todayOngoingEvents = uniqueEventsById([
+    ...todayMusicEvents.filter(isOngoingTodayEvent),
+    ...todayFoodDrinkEvents.filter(isOngoingTodayEvent),
+    ...todayCultureEvents.filter(isOngoingTodayEvent),
+    ...todaySportsEvents.filter(isOngoingTodayEvent),
+    ...todayOtherEvents.filter(isOngoingTodayEvent),
+  ]);
+  const todayOngoingEventIds = new Set(todayOngoingEvents.map((event) => event.id));
+  const todayNonOngoingMusicEvents = todayMusicEvents.filter((event) => !todayOngoingEventIds.has(event.id));
+  const todayNonOngoingFoodDrinkEvents = todayFoodDrinkEvents.filter((event) => !todayOngoingEventIds.has(event.id));
+  const todayNonOngoingCultureEvents = todayCultureEvents.filter((event) => !todayOngoingEventIds.has(event.id));
+  const todayNonOngoingSportsEvents = todaySportsEvents.filter((event) => !todayOngoingEventIds.has(event.id));
+  const todayNonOngoingOtherEvents = todayOtherEvents.filter((event) => !todayOngoingEventIds.has(event.id));
+  const todayEvents = uniqueEventsById(buildBalancedTodayEvents([
+    ...todayNonOngoingMusicEvents,
+    ...todayNonOngoingFoodDrinkEvents,
+    ...todayNonOngoingCultureEvents,
+    ...todayNonOngoingSportsEvents,
+    ...todayNonOngoingOtherEvents,
+    ...todayOngoingEvents,
+  ]));
   const otherRenderedEvents = [
     ...eventProvider.otherEvents,
   ].filter((event: EventItem, index: number, events: EventItem[]) => events.findIndex((other) => other.id === event.id) === index);
   const musicRenderedEvents = [
     ...(visibleMusicEvents.length > 0 ? visibleMusicEvents : musicFallbackPromotedEvents),
   ].filter((event: EventItem, index: number, events: EventItem[]) => events.findIndex((other) => other.id === event.id) === index);
-  const todayEventsWithFallback = [
-    ...todayMusicEvents,
-    ...todaySportsEvents,
-    ...todayCultureEvents,
-    ...todayOtherEvents,
-    ...todayFoodDrinkEvents,
-  ];
-  const todayEvents = buildBalancedTodayEvents([
-    ...todayEventsWithFallback,
-  ]);
   const weatherUpdatedLabel = weatherResult.weather?.cache
     ? formatSourceCacheSnapshot(weatherResult.weather.cache) ?? "Not reported"
     : weatherResult.error ?? "Not reported";
