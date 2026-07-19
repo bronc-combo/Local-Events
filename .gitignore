@@ -45,6 +45,7 @@ next-env.d.ts
 /data/food-drink.capacities.import.json
 /data/music-taste.overrides.local.json
 /public/data/dashboard-snapshot.json
+/.tmp/
 
 # local source cache
 /.daily-overview-cache/

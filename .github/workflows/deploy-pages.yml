@@ -5,9 +5,17 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      send_test_email:
+        description: Send the daily digest after generating the snapshot
+        required: false
+        default: false
+        type: boolean
   schedule:
-    # 8:00 AM Houston time during CDT translates to 1:00 PM UTC.
-    - cron: "0 13 * * *"
+    # 4:00 AM Houston time during CDT translates to 9:00 AM UTC.
+    - cron: "0 9 * * *"
+    # Backup run a little later in the morning in case the first scheduled job is delayed.
+    - cron: "0 11 * * *"
 
 permissions:
   contents: read
@@ -37,6 +45,16 @@ jobs:
 
       - name: Generate snapshot data
         run: npm run generate:snapshot
+
+      - name: Send daily email digest
+        if: >-
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && inputs.send_test_email == true)
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DAILY_EMAIL_TO: ${{ secrets.DAILY_EMAIL_TO }}
+          DAILY_EMAIL_FROM: ${{ secrets.DAILY_EMAIL_FROM }}
+        run: npm run send:daily-email
 
       - name: Build static export
         env:

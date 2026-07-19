@@ -667,9 +667,8 @@ function getFoodDrinkPrimaryLink(item: FoodDrinkSpecial): { url: string; label: 
   };
 }
 
-function buildFoodDrinkTodayEvent(item: FoodDrinkSpecial, index: number): EventItem {
+function buildFoodDrinkTodayEvent(item: FoodDrinkSpecial, index: number, today: string): EventItem {
   const special = item.todaySpecials?.[0];
-  const today = getHoustonTodayDate();
   const startTime = special?.startTime ?? "12:00:00";
 
   return {
@@ -703,11 +702,14 @@ function buildFoodDrinkTodayEvent(item: FoodDrinkSpecial, index: number): EventI
   };
 }
 
-export function buildFoodDrinkTodayEvents(items: FoodDrinkSpecial[]): EventItem[] {
+export function buildFoodDrinkTodayEvents(
+  items: FoodDrinkSpecial[],
+  today = getHoustonTodayDate(),
+): EventItem[] {
   return items
     .filter((item) => item.appliesToday)
     .slice(0, 3)
-    .map((item, index) => buildFoodDrinkTodayEvent(item, index));
+    .map((item, index) => buildFoodDrinkTodayEvent(item, index, today));
 }
 
 export async function getFoodDrinkData(): Promise<FoodDrinkProviderResult> {

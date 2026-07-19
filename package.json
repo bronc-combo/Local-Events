@@ -12,7 +12,8 @@
     "start": "next start",
     "lint": "eslint",
     "import:food-drink": "node scripts/import-capacities-food-drink.mjs data/food-drink.capacities.import.json",
-    "generate:snapshot": "node --experimental-strip-types --loader ./scripts/ts-alias-loader.mjs scripts/generate-dashboard-snapshot.ts"
+    "generate:snapshot": "node --experimental-strip-types --loader ./scripts/ts-alias-loader.mjs scripts/generate-dashboard-snapshot.ts",
+    "send:daily-email": "node --experimental-strip-types --loader ./scripts/ts-alias-loader.mjs scripts/send-daily-email.ts"
   },
   "dependencies": {
     "next": "16.2.9",
