@@ -180,6 +180,17 @@ function getEventLink(event: EventItem): string | undefined {
   return event.eventUrl ?? event.sourceLinks[0]?.url;
 }
 
+function getEmailIdempotencyKey(snapshot: DashboardSnapshot): string {
+  const override = process.env.DAILY_EMAIL_IDEMPOTENCY_KEY?.trim();
+
+  if (override) {
+    return override;
+  }
+
+  const date = getHoustonDate(new Date(snapshot.generatedAt));
+  return `daily-overview-houston-scheduled-${date}`;
+}
+
 function buildHtml(snapshot: DashboardSnapshot, sections: EmailSection[]): string {
   const weather = snapshot.weatherResult.weather;
   const generatedAt = formatHoustonDateTime(new Date(snapshot.generatedAt));
@@ -278,16 +289,16 @@ async function loadSnapshot(): Promise<DashboardSnapshot> {
   return JSON.parse(raw) as DashboardSnapshot;
 }
 
-async function writeDryRun(html: string, text: string): Promise<void> {
+async function writeDryRun(html: string, text: string, idempotencyKey: string): Promise<void> {
   await mkdir(DRY_RUN_DIRECTORY, { recursive: true });
   await Promise.all([
     writeFile(path.join(DRY_RUN_DIRECTORY, "daily-email.html"), html, "utf8"),
     writeFile(path.join(DRY_RUN_DIRECTORY, "daily-email.txt"), text, "utf8"),
   ]);
-  console.log("Dry run written to .tmp/daily-email.html and .tmp/daily-email.txt");
+  console.log(`Dry run written to .tmp/daily-email.html and .tmp/daily-email.txt. Idempotency key: ${idempotencyKey}`);
 }
 
-async function sendEmail(html: string, text: string, snapshot: DashboardSnapshot): Promise<void> {
+async function sendEmail(html: string, text: string, snapshot: DashboardSnapshot, idempotencyKey: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.DAILY_EMAIL_TO;
   const from = process.env.DAILY_EMAIL_FROM;
@@ -296,13 +307,12 @@ async function sendEmail(html: string, text: string, snapshot: DashboardSnapshot
     throw new Error("RESEND_API_KEY, DAILY_EMAIL_TO, and DAILY_EMAIL_FROM must be configured before sending email.");
   }
 
-  const date = getHoustonDate(new Date(snapshot.generatedAt));
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `daily-overview-houston-${date}`,
+      "Idempotency-Key": idempotencyKey,
     },
     body: JSON.stringify({
       from,
@@ -334,13 +344,14 @@ async function main(): Promise<void> {
   const sections = buildTodaySections(snapshot);
   const html = buildHtml(snapshot, sections);
   const text = buildText(snapshot, sections);
+  const idempotencyKey = getEmailIdempotencyKey(snapshot);
 
   if (process.env.DAILY_EMAIL_DRY_RUN === "true") {
-    await writeDryRun(html, text);
+    await writeDryRun(html, text, idempotencyKey);
     return;
   }
 
-  await sendEmail(html, text, snapshot);
+  await sendEmail(html, text, snapshot, idempotencyKey);
 }
 
 main().catch((error) => {
