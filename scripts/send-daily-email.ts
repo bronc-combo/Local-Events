@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 import { buildFoodDrinkTodayEvents } from "../lib/food-drink-provider";
@@ -180,7 +181,10 @@ function getEventLink(event: EventItem): string | undefined {
   return event.eventUrl ?? event.sourceLinks[0]?.url;
 }
 
-function getEmailIdempotencyKey(snapshot: DashboardSnapshot): string {
+function getEmailIdempotencyKey(
+  snapshot: DashboardSnapshot,
+  payload: EmailPayload,
+): string {
   const override = process.env.DAILY_EMAIL_IDEMPOTENCY_KEY?.trim();
 
   if (override) {
@@ -188,8 +192,21 @@ function getEmailIdempotencyKey(snapshot: DashboardSnapshot): string {
   }
 
   const date = getHoustonDate(new Date(snapshot.generatedAt));
-  return `daily-overview-houston-scheduled-${date}`;
+  const payloadHash = createHash("sha256")
+    .update(JSON.stringify(payload))
+    .digest("hex")
+    .slice(0, 16);
+
+  return `daily-overview-houston-scheduled-${date}-${payloadHash}`;
 }
+
+type EmailPayload = {
+  from: string;
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+};
 
 function buildHtml(snapshot: DashboardSnapshot, sections: EmailSection[]): string {
   const weather = snapshot.weatherResult.weather;
@@ -298,12 +315,10 @@ async function writeDryRun(html: string, text: string, idempotencyKey: string): 
   console.log(`Dry run written to .tmp/daily-email.html and .tmp/daily-email.txt. Idempotency key: ${idempotencyKey}`);
 }
 
-async function sendEmail(html: string, text: string, snapshot: DashboardSnapshot, idempotencyKey: string): Promise<void> {
+async function sendEmail(payload: EmailPayload, idempotencyKey: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.DAILY_EMAIL_TO;
-  const from = process.env.DAILY_EMAIL_FROM;
 
-  if (!apiKey || !to || !from) {
+  if (!apiKey || !payload.to[0] || !payload.from) {
     throw new Error("RESEND_API_KEY, DAILY_EMAIL_TO, and DAILY_EMAIL_FROM must be configured before sending email.");
   }
 
@@ -314,13 +329,7 @@ async function sendEmail(html: string, text: string, snapshot: DashboardSnapshot
       "Content-Type": "application/json",
       "Idempotency-Key": idempotencyKey,
     },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject: `Houston Today — ${formatHoustonDate(new Date(snapshot.generatedAt))}`,
-      html,
-      text,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const responseText = await response.text();
@@ -344,14 +353,22 @@ async function main(): Promise<void> {
   const sections = buildTodaySections(snapshot);
   const html = buildHtml(snapshot, sections);
   const text = buildText(snapshot, sections);
-  const idempotencyKey = getEmailIdempotencyKey(snapshot);
+  const subject = `Houston Today — ${formatHoustonDate(new Date(snapshot.generatedAt))}`;
+  const payload: EmailPayload = {
+    from: process.env.DAILY_EMAIL_FROM ?? "",
+    to: process.env.DAILY_EMAIL_TO ? [process.env.DAILY_EMAIL_TO] : [],
+    subject,
+    html,
+    text,
+  };
+  const idempotencyKey = getEmailIdempotencyKey(snapshot, payload);
 
   if (process.env.DAILY_EMAIL_DRY_RUN === "true") {
     await writeDryRun(html, text, idempotencyKey);
     return;
   }
 
-  await sendEmail(html, text, snapshot, idempotencyKey);
+  await sendEmail(payload, idempotencyKey);
 }
 
 main().catch((error) => {
