@@ -47,15 +47,21 @@ jobs:
         run: npm run generate:snapshot
 
       - name: Send daily email digest
+        id: daily_email
         if: >-
           github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' && inputs.send_test_email == true)
+        continue-on-error: true
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           DAILY_EMAIL_TO: ${{ secrets.DAILY_EMAIL_TO }}
           DAILY_EMAIL_FROM: ${{ secrets.DAILY_EMAIL_FROM }}
           DAILY_EMAIL_IDEMPOTENCY_KEY: ${{ github.event_name == 'workflow_dispatch' && format('daily-overview-houston-test-{0}-{1}', github.run_id, github.run_attempt) || '' }}
         run: npm run send:daily-email
+
+      - name: Report daily email failure
+        if: steps.daily_email.outcome == 'failure'
+        run: echo "::warning title=Daily email::Daily email failed, but GitHub Pages deployment will continue."
 
       - name: Build static export
         env:
